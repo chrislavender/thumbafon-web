@@ -77,9 +77,7 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     };
 
     const debouncedRecalculate = () => {
-      if (resizeTimerRef.current != null) {
-        clearTimeout(resizeTimerRef.current);
-      }
+      clearTimeout(resizeTimerRef.current);
       resizeTimerRef.current = window.setTimeout(recalculateGrid, 100);
     };
 
@@ -96,9 +94,7 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', debouncedRecalculate);
-      if (resizeTimerRef.current != null) {
-        clearTimeout(resizeTimerRef.current);
-      }
+      clearTimeout(resizeTimerRef.current);
     };
   }, []);
 
