@@ -21,6 +21,7 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, number | null>());
   const lastOrientation = useRef<'portrait' | 'landscape'>('landscape');
+  const resizeTimerRef = useRef<number | undefined>(undefined);
 
   const [notes, setNotes] = useState<NoteInfo[]>([]);
   const [btnW, setBtnW] = useState(160);
@@ -35,10 +36,8 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     const el = containerRef.current;
     if (!el) return;
 
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      const { width, height } = entry.contentRect;
+    const recalculateGrid = () => {
+      const { width, height } = el.getBoundingClientRect();
 
       const compact = width <= 768;
       const bw = compact ? 120 : 160;
@@ -75,10 +74,28 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
       setBtnH(bh);
       setCols(c);
       setNotes(newNotes);
+    };
+
+    const debouncedRecalculate = () => {
+      clearTimeout(resizeTimerRef.current);
+      resizeTimerRef.current = window.setTimeout(recalculateGrid, 100);
+    };
+
+    const observer = new ResizeObserver(() => {
+      debouncedRecalculate();
     });
 
     observer.observe(el);
-    return () => observer.disconnect();
+
+    // Also listen for window resize events to ensure grid always updates.
+    // Addresses edge cases where ResizeObserver may not fire during window resize.
+    window.addEventListener('resize', debouncedRecalculate);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', debouncedRecalculate);
+      clearTimeout(resizeTimerRef.current);
+    };
   }, []);
 
   // Notify parent when notes change
