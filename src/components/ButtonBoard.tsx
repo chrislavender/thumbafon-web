@@ -35,7 +35,7 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     const el = containerRef.current;
     if (!el) return;
 
-    let resizeTimer: number | undefined;
+    const resizeTimer = { current: undefined as number | undefined };
 
     const recalculateGrid = () => {
       const { width, height } = el.getBoundingClientRect();
@@ -78,8 +78,10 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     };
 
     const debouncedRecalculate = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(recalculateGrid, 100);
+      if (resizeTimer.current !== undefined) {
+        clearTimeout(resizeTimer.current);
+      }
+      resizeTimer.current = window.setTimeout(recalculateGrid, 100);
     };
 
     const observer = new ResizeObserver(() => {
@@ -88,14 +90,16 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
 
     observer.observe(el);
 
-    // Also listen for window resize events as a fallback for browsers
-    // where ResizeObserver may not fire reliably on window resize
+    // Also listen for window resize events to ensure grid always updates.
+    // Addresses edge cases where ResizeObserver may not fire during window resize.
     window.addEventListener('resize', debouncedRecalculate);
 
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', debouncedRecalculate);
-      clearTimeout(resizeTimer);
+      if (resizeTimer.current !== undefined) {
+        clearTimeout(resizeTimer.current);
+      }
     };
   }, []);
 
