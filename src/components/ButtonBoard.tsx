@@ -10,9 +10,6 @@ interface ButtonBoardProps {
   onGridChange: (notes: { midiNum: number; color: string }[]) => void;
 }
 
-function clamp(min: number, val: number, max: number): number {
-  return Math.max(min, Math.min(val, max));
-}
 
 const ButtonBoard: React.FC<ButtonBoardProps> = ({
   onNoteOn,
@@ -56,14 +53,9 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
         lastOrientation.current = height >= width ? 'portrait' : 'landscape';
       }
 
-      const portrait = lastOrientation.current === 'portrait';
-      // Portrait:  2–4 cols, 4–8 rows   Landscape: 4–8 cols, 2–4 rows
-      const c = portrait
-        ? clamp(2, Math.floor(width  / bw), 4)
-        : clamp(4, Math.floor(width  / bw), 8);
-      const r = portrait
-        ? clamp(4, Math.floor(height / bh), 8)
-        : clamp(2, Math.floor(height / bh), 4);
+      // Calculate maximum columns and rows that fit completely
+      const c = Math.floor(width  / bw);
+      const r = Math.floor(height / bh);
       const total = c * r;
 
       const ascending: NoteInfo[] = [];
