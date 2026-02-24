@@ -1,0 +1,72 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Thumbafon-Web
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please fill out the details below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Clear explanation of what you want to add or change
+      placeholder: "I would like to add..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Specific requirements that must be met
+      placeholder: |
+        - [ ] Requirement 1
+        - [ ] Requirement 2
+        - [ ] Requirement 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of the app does this affect?
+      options:
+        - Audio Engine
+        - UI/UX
+        - Music System
+        - Performance
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: files-affected
+    attributes:
+      label: Files Likely Affected
+      description: List files that will need changes (if known)
+      placeholder: |
+        - src/audio/AudioEngine.ts
+        - src/App.tsx
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Implementation ideas, constraints, or related issues
+      placeholder: "This might require..."
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Low
+        - Medium
+        - High
+        - Critical
+      default: 1

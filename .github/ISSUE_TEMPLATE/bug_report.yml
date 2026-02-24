@@ -1,0 +1,99 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please provide as much detail as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What's the bug? What did you expect to happen?
+      placeholder: "When I click..., instead of X happening, Y happens"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Go to...
+        2. Click on...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Minor - Cosmetic issue
+        - Moderate - Affects some functionality
+        - Major - Breaks core functionality
+        - Critical - App unusable
+      default: 1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of the app is affected?
+      options:
+        - Audio Engine
+        - UI/UX
+        - Music System
+        - Performance
+        - Build/Deployment
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, device type
+      placeholder: |
+        - Browser: Chrome 120
+        - OS: Windows 11
+        - Device: Desktop / Mobile / Tablet
+
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: Console Errors
+      description: Any errors in browser console? (Press F12 to view)
+      render: shell
+
+  - type: textarea
+    id: files-affected
+    attributes:
+      label: Files Likely Involved
+      description: If you know which files might be causing this
+      placeholder: |
+        - src/audio/AudioEngine.ts
