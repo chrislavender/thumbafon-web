@@ -79,6 +79,6 @@ function buildTriangle(ctx: AudioContext): WaveformDef {
   }
   return {
     wave: createWave(ctx, real, imag),
-    params: { attackTime: 0.050, releaseTime: 0.000, sustainLevel: 1.0 },
+    params: { attackTime: 0.050, releaseTime: 0.050, sustainLevel: 1.0 },
   };
 }
