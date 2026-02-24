@@ -57,6 +57,59 @@ body,
   background: #3a3a3a;
 }
 
+/* ── Volume control ───────────────────────────── */
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  padding-left: 20px;
+}
+
+.volume-control label {
+  color: #999;
+  font-size: 0.85rem;
+  user-select: none;
+}
+
+.volume-control input[type="range"] {
+  flex: 1;
+  max-width: 200px;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #333;
+  border-radius: 3px;
+  outline: none;
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4a8aff;
+  cursor: pointer;
+}
+
+.volume-control input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #4a8aff;
+  cursor: pointer;
+  border: none;
+}
+
+.volume-control .volume-value {
+  color: #ccc;
+  font-size: 0.85rem;
+  min-width: 40px;
+  text-align: right;
+  user-select: none;
+}
+
 /* ── Button board container ───────────────────── */
 .button-board {
   flex: 1;

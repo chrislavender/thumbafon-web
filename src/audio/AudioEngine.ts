@@ -14,12 +14,15 @@ function buildIR(ctx: AudioContext, duration = 3): AudioBuffer {
 }
 
 export default class AudioEngine implements IAudioEngine {
+  private static readonly MAX_POLYPHONY = 4;
+
   private ctx: AudioContext | null = null;
-  private voices = new Map<number, Voice>();
+  private voicePool: Voice[] = [];
   private waveforms: Record<WaveformType, WaveformDef> | null = null;
   private currentType: WaveformType = 'sine';
 
   private masterGain: GainNode | null = null;
+  private volumeGain: GainNode | null = null;
   private dryGain: GainNode | null = null;
   private wetGain: GainNode | null = null;
   private convolver: ConvolverNode | null = null;
@@ -35,12 +38,16 @@ export default class AudioEngine implements IAudioEngine {
   private buildGraph(ctx: AudioContext): void {
     // Disconnect old graph nodes if they exist
     this.masterGain?.disconnect();
+    this.volumeGain?.disconnect();
     this.dryGain?.disconnect();
     this.wetGain?.disconnect();
     this.convolver?.disconnect();
 
     this.masterGain = ctx.createGain();
     this.masterGain.gain.value = 1;
+
+    this.volumeGain = ctx.createGain();
+    this.volumeGain.gain.value = 0.7; // Default 70% volume
 
     this.dryGain = ctx.createGain();
     this.dryGain.gain.value = 0.5;
@@ -51,8 +58,10 @@ export default class AudioEngine implements IAudioEngine {
     this.convolver = ctx.createConvolver();
     this.convolver.buffer = buildIR(ctx);
 
-    this.masterGain.connect(this.dryGain);
-    this.masterGain.connect(this.wetGain);
+    // Audio graph: masterGain → volumeGain → dryGain/wetGain → destination
+    this.masterGain.connect(this.volumeGain);
+    this.volumeGain.connect(this.dryGain);
+    this.volumeGain.connect(this.wetGain);
     this.dryGain.connect(ctx.destination);
     this.wetGain.connect(this.convolver);
     this.convolver.connect(ctx.destination);
@@ -60,76 +69,127 @@ export default class AudioEngine implements IAudioEngine {
 
   private updateMasterGain(): void {
     if (!this.masterGain) return;
-    let playingCount = 0;
-    for (const voice of this.voices.values()) {
-      if (voice.isPlaying) playingCount++;
+    const playingCount = this.voicePool.filter(v => v.isPlaying).length;
+    // Scale gain based on number of active voices to prevent clipping
+    // 1 voice = 1.0, 2 voices = 0.5, 3 voices = 0.33, 4 voices = 0.25
+    this.masterGain.gain.value = playingCount > 0 ? 1.0 / playingCount : 1.0;
+  }
+
+  private findAvailableVoice(): Voice | null {
+    // First, try to find an idle voice
+    for (const voice of this.voicePool) {
+      if (!voice.isPlaying) return voice;
     }
-    this.masterGain.gain.value = 1 / Math.max(1, playingCount);
+    // All voices busy - steal the oldest one
+    let oldestVoice = this.voicePool[0];
+    for (const voice of this.voicePool) {
+      if (voice.isPlaying && voice.startTime < oldestVoice.startTime) {
+        oldestVoice = voice;
+      }
+    }
+    return oldestVoice;
+  }
+
+  private findVoiceByMidi(midiNum: number): Voice | null {
+    return this.voicePool.find(v => v.isPlaying && v.midiNum === midiNum) || null;
   }
 
   private get currentWaveform(): WaveformDef {
     return this.waveforms![this.currentType];
   }
 
-  initVoices(notes: NoteInit[]): void {
+  initVoices(_notes: NoteInit[]): void {
     const ctx = this.ensureContext();
 
     // Kill all existing voices
-    for (const voice of this.voices.values()) {
+    for (const voice of this.voicePool) {
       voice.kill();
     }
-    this.voices.clear();
+    this.voicePool = [];
 
     // Rebuild the audio graph
     this.buildGraph(ctx);
 
+    // Create fixed pool of 4 voices
     const { wave, params } = this.currentWaveform;
-    for (const note of notes) {
-      const freq = noteNumToFreq(note.midiNum);
-      const voice = new Voice(ctx, note.midiNum, freq, wave, params, this.masterGain!);
-      this.voices.set(note.midiNum, voice);
+    for (let i = 0; i < AudioEngine.MAX_POLYPHONY; i++) {
+      const voice = new Voice(ctx, wave, params, this.masterGain!);
+      this.voicePool.push(voice);
     }
   }
 
   noteOn(midiNum: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
-    const voice = this.voices.get(midiNum);
-    if (!voice || voice.isPlaying) return;
-    voice.noteOn(ctx, this.currentWaveform.params);
+
+    // Resume AudioContext if suspended (required by browser autoplay policy)
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(err => console.error('Failed to resume audio context:', err));
+    }
+
+    // Check if this note is already playing
+    const existingVoice = this.findVoiceByMidi(midiNum);
+    if (existingVoice) return; // Note already playing
+
+    // Get an available voice (may steal oldest)
+    const voice = this.findAvailableVoice();
+    if (!voice) return;
+
+    const freq = noteNumToFreq(midiNum);
+    voice.noteOn(ctx, midiNum, freq, this.currentWaveform.params);
     this.updateMasterGain();
   }
 
   noteOff(midiNum: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
-    const voice = this.voices.get(midiNum);
-    if (!voice || !voice.isPlaying) return;
+
+    const voice = this.findVoiceByMidi(midiNum);
+    if (!voice) return;
+
     voice.noteOff(ctx, this.currentWaveform.params);
     this.updateMasterGain();
   }
 
   changeNote(oldMidi: number, newMidi: number): void {
-    this.noteOff(oldMidi);
-    this.noteOn(newMidi);
+    const ctx = this.ctx;
+    if (!ctx) return;
+
+    // Find the voice playing the old note
+    const voice = this.findVoiceByMidi(oldMidi);
+    if (!voice) {
+      // Old note not playing, just start new note
+      this.noteOn(newMidi);
+      return;
+    }
+
+    // Reuse the same voice for the new note (glissando effect)
+    const freq = noteNumToFreq(newMidi);
+    voice.midiNum = newMidi;
+    voice.setFrequency(freq);
   }
 
   killAll(): void {
-    for (const voice of this.voices.values()) {
+    for (const voice of this.voicePool) {
       voice.kill();
     }
-    if (this.masterGain) {
-      this.masterGain.gain.value = 1;
-    }
+    this.updateMasterGain();
   }
 
   setSoundType(type: SoundType): void {
     this.currentType = type as WaveformType;
     if (!this.waveforms) return;
     const { wave } = this.waveforms[this.currentType];
-    for (const voice of this.voices.values()) {
+    for (const voice of this.voicePool) {
       voice.updateWave(wave);
     }
+  }
+
+  setVolume(volume: number): void {
+    if (!this.volumeGain) return;
+    // Clamp volume to 0-1 range
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    this.volumeGain.gain.value = clampedVolume;
   }
 }
 

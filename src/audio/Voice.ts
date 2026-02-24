@@ -7,33 +7,36 @@ export interface VoiceParams {
 export class Voice {
   private osc: OscillatorNode;
   private gainNode: GainNode;
-  readonly midiNum: number;
+  midiNum: number | null = null;
   isPlaying: boolean = false;
+  startTime: number = 0;
 
   constructor(
     ctx: AudioContext,
-    midiNum: number,
-    freq: number,
     wave: PeriodicWave,
     _params: VoiceParams,
     destination: AudioNode
   ) {
-    this.midiNum = midiNum;
-
     this.gainNode = ctx.createGain();
     this.gainNode.gain.value = 0;
     this.gainNode.connect(destination);
 
     this.osc = ctx.createOscillator();
-    this.osc.frequency.value = freq;
+    this.osc.frequency.value = 440;
     this.osc.setPeriodicWave(wave);
     this.osc.connect(this.gainNode);
     this.osc.start();
   }
 
-  noteOn(ctx: AudioContext, params: VoiceParams): void {
-    if (this.isPlaying) return;
+  setFrequency(freq: number): void {
+    this.osc.frequency.value = freq;
+  }
+
+  noteOn(ctx: AudioContext, midiNum: number, freq: number, params: VoiceParams): void {
+    this.midiNum = midiNum;
     this.isPlaying = true;
+    this.startTime = ctx.currentTime;
+    this.osc.frequency.value = freq;
     const now = ctx.currentTime;
     this.gainNode.gain.cancelScheduledValues(now);
     this.gainNode.gain.setValueAtTime(0, now);
@@ -53,6 +56,7 @@ export class Voice {
     this.gainNode.gain.cancelScheduledValues(0);
     this.gainNode.gain.value = 0;
     this.isPlaying = false;
+    this.midiNum = null;
   }
 
   updateWave(wave: PeriodicWave): void {

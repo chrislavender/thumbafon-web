@@ -22,4 +22,7 @@ export interface IAudioEngine {
 
   /** Swap the active waveform. Takes effect on next noteOn. */
   setSoundType(type: SoundType): void;
+
+  /** Set master volume (0.0 to 1.0). */
+  setVolume(volume: number): void;
 }

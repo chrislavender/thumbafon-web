@@ -14,6 +14,7 @@ const SOUND_TYPES: { label: string; value: SoundType }[] = [
 
 function App() {
   const [soundType, setSoundType] = useState<SoundType>('sine');
+  const [volume, setVolume] = useState(0.7);
 
   // Kill all notes when the tab loses focus or is hidden
   useEffect(() => {
@@ -32,6 +33,12 @@ function App() {
   const handleSoundChange = (type: SoundType) => {
     setSoundType(type);
     audioEngine.setSoundType(type);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    audioEngine.setVolume(newVolume);
   };
 
   const handleGridChange = useCallback(
@@ -69,6 +76,19 @@ function App() {
             {label}
           </button>
         ))}
+        <div className="volume-control">
+          <label htmlFor="volume-slider">Volume</label>
+          <input
+            id="volume-slider"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={volume}
+            onChange={handleVolumeChange}
+          />
+          <span className="volume-value">{Math.round(volume * 100)}%</span>
+        </div>
       </div>
       <ButtonBoard
         onNoteOn={handleNoteOn}
