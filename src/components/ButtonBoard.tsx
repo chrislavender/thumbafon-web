@@ -81,6 +81,9 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
       resizeTimerRef.current = window.setTimeout(recalculateGrid, 100);
     };
 
+    // Calculate grid immediately on mount for initial render
+    recalculateGrid();
+
     const observer = new ResizeObserver(() => {
       debouncedRecalculate();
     });
