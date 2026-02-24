@@ -7,7 +7,7 @@ A web-based polyphonic synthesizer built with React 19 + TypeScript + Vite. Touc
 
 ### Audio Engine (`src/audio/`)
 - **AudioEngine.ts**: Main audio engine using Web Audio API
-  - Fixed pool of 4 voices for polyphony
+  - Fixed pool of 3 voices for polyphony
   - Voice stealing algorithm (oldest-first when all busy)
   - Audio graph: voices → masterGain → volumeGain → dryGain/wetGain → convolver → destination
   - Reverb: 50/50 dry/wet mix using convolver with procedural impulse response
@@ -45,8 +45,8 @@ A web-based polyphonic synthesizer built with React 19 + TypeScript + Vite. Touc
   - HSL color generation based on note position
 
 ## Key Features
-- ✅ 4-voice polyphony with voice stealing
-- ✅ Multi-touch support (up to 4 simultaneous notes)
+- ✅ 3-voice polyphony with voice stealing
+- ✅ Multi-touch support (up to 3 simultaneous notes)
 - ✅ Glissando (smooth pitch transitions)
 - ✅ 5 distinct instrument sounds
 - ✅ Reverb effect
@@ -88,7 +88,7 @@ npm run preview  # Preview production build
 - Single audio engine instance (singleton pattern)
 - Preallocated voices for low latency
 - Pointer capture for reliable multi-touch
-- Fixed 4-voice limit prevents CPU overload
+- Fixed 3-voice limit prevents CPU overload
 
 ## Future Considerations
 - Consider adding ADSR envelope controls

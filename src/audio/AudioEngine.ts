@@ -14,7 +14,7 @@ function buildIR(ctx: AudioContext, duration = 3): AudioBuffer {
 }
 
 export default class AudioEngine implements IAudioEngine {
-  private static readonly MAX_POLYPHONY = 4;
+  private static readonly MAX_POLYPHONY = 3;
 
   private ctx: AudioContext | null = null;
   private voicePool: Voice[] = [];
@@ -71,7 +71,7 @@ export default class AudioEngine implements IAudioEngine {
     if (!this.masterGain) return;
     const playingCount = this.voicePool.filter(v => v.isPlaying).length;
     // Scale gain based on number of active voices to prevent clipping
-    // 1 voice = 1.0, 2 voices = 0.5, 3 voices = 0.33, 4 voices = 0.25
+    // 1 voice = 1.0, 2 voices = 0.5, 3 voices = 0.33
     this.masterGain.gain.value = playingCount > 0 ? 1.0 / playingCount : 1.0;
   }
 
@@ -110,7 +110,7 @@ export default class AudioEngine implements IAudioEngine {
     // Rebuild the audio graph
     this.buildGraph(ctx);
 
-    // Create fixed pool of 4 voices
+    // Create fixed pool of 3 voices
     const { wave, params } = this.currentWaveform;
     for (let i = 0; i < AudioEngine.MAX_POLYPHONY; i++) {
       const voice = new Voice(ctx, wave, params, this.masterGain!);
