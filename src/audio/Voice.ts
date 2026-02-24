@@ -33,14 +33,34 @@ export class Voice {
   }
 
   noteOn(ctx: AudioContext, midiNum: number, freq: number, params: VoiceParams): void {
-    this.midiNum = midiNum;
-    this.isPlaying = true;
-    this.startTime = ctx.currentTime;
-    this.osc.frequency.value = freq;
     const now = ctx.currentTime;
-    this.gainNode.gain.cancelScheduledValues(now);
-    this.gainNode.gain.setValueAtTime(0, now);
-    this.gainNode.gain.linearRampToValueAtTime(params.sustainLevel, now + params.attackTime);
+
+    // If voice is being stolen (currently playing), fade out quickly first
+    if (this.isPlaying) {
+      const fadeOutTime = 0.010; // 10ms quick fade to prevent clicks
+      this.gainNode.gain.cancelScheduledValues(now);
+      this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+      this.gainNode.gain.linearRampToValueAtTime(0, now + fadeOutTime);
+
+      // Schedule the new note to start after fade-out
+      const startTime = now + fadeOutTime;
+      this.midiNum = midiNum;
+      this.startTime = startTime;
+      this.osc.frequency.setValueAtTime(freq, startTime);
+      this.gainNode.gain.setValueAtTime(0, startTime);
+      this.gainNode.gain.linearRampToValueAtTime(params.sustainLevel, startTime + params.attackTime);
+    } else {
+      // Normal note start (voice was idle)
+      this.midiNum = midiNum;
+      this.isPlaying = true;
+      this.startTime = now;
+      this.osc.frequency.value = freq;
+      this.gainNode.gain.cancelScheduledValues(now);
+      this.gainNode.gain.setValueAtTime(0, now);
+      this.gainNode.gain.linearRampToValueAtTime(params.sustainLevel, now + params.attackTime);
+    }
+
+    this.isPlaying = true;
   }
 
   noteOff(ctx: AudioContext, params: VoiceParams): void {

@@ -27,7 +27,7 @@ function buildSine(ctx: AudioContext): WaveformDef {
   imag[1] = 1.0;
   return {
     wave: createWave(ctx, real, imag),
-    params: { attackTime: 0.001, releaseTime: 0.010, sustainLevel: 0.9 },
+    params: { attackTime: 0.005, releaseTime: 0.010, sustainLevel: 0.9 },
   };
 }
 

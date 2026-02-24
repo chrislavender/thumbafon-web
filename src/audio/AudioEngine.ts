@@ -68,11 +68,24 @@ export default class AudioEngine implements IAudioEngine {
   }
 
   private updateMasterGain(): void {
-    if (!this.masterGain) return;
+    if (!this.masterGain || !this.ctx) return;
     const playingCount = this.voicePool.filter(v => v.isPlaying).length;
     // Scale gain based on number of active voices to prevent clipping
     // 1 voice = 1.0, 2 voices = 0.5, 3 voices = 0.33
-    this.masterGain.gain.value = playingCount > 0 ? 1.0 / playingCount : 1.0;
+    const targetGain = playingCount > 0 ? 1.0 / playingCount : 1.0;
+    const now = this.ctx.currentTime;
+    const rampTime = 0.015; // 15ms smooth ramp to prevent clicks
+
+    this.masterGain.gain.cancelScheduledValues(now);
+    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+
+    // Use exponentialRamp for smoother transitions, but handle zero case
+    if (targetGain > 0) {
+      this.masterGain.gain.exponentialRampToValueAtTime(targetGain, now + rampTime);
+    } else {
+      // For zero target, ramp to a very small value then set to zero
+      this.masterGain.gain.exponentialRampToValueAtTime(0.0001, now + rampTime);
+    }
   }
 
   private findAvailableVoice(): Voice | null {
