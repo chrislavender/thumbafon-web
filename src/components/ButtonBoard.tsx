@@ -21,6 +21,7 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, number | null>());
   const lastOrientation = useRef<'portrait' | 'landscape'>('landscape');
+  const resizeTimerRef = useRef<number | undefined>(undefined);
 
   const [notes, setNotes] = useState<NoteInfo[]>([]);
   const [btnW, setBtnW] = useState(160);
@@ -34,8 +35,6 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-
-    const resizeTimer = { current: undefined as number | undefined };
 
     const recalculateGrid = () => {
       const { width, height } = el.getBoundingClientRect();
@@ -78,10 +77,10 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     };
 
     const debouncedRecalculate = () => {
-      if (resizeTimer.current !== undefined) {
-        clearTimeout(resizeTimer.current);
+      if (resizeTimerRef.current != null) {
+        clearTimeout(resizeTimerRef.current);
       }
-      resizeTimer.current = window.setTimeout(recalculateGrid, 100);
+      resizeTimerRef.current = window.setTimeout(recalculateGrid, 100);
     };
 
     const observer = new ResizeObserver(() => {
@@ -97,8 +96,8 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', debouncedRecalculate);
-      if (resizeTimer.current !== undefined) {
-        clearTimeout(resizeTimer.current);
+      if (resizeTimerRef.current != null) {
+        clearTimeout(resizeTimerRef.current);
       }
     };
   }, []);
