@@ -35,10 +35,8 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     const el = containerRef.current;
     if (!el) return;
 
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      const { width, height } = entry.contentRect;
+    const recalculateGrid = () => {
+      const { width, height } = el.getBoundingClientRect();
 
       const compact = width <= 768;
       const bw = compact ? 120 : 160;
@@ -75,10 +73,22 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
       setBtnH(bh);
       setCols(c);
       setNotes(newNotes);
+    };
+
+    const observer = new ResizeObserver(() => {
+      recalculateGrid();
     });
 
     observer.observe(el);
-    return () => observer.disconnect();
+
+    // Also listen for window resize events as a fallback for browsers
+    // where ResizeObserver may not fire reliably on window resize
+    window.addEventListener('resize', recalculateGrid);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', recalculateGrid);
+    };
   }, []);
 
   // Notify parent when notes change
