@@ -35,7 +35,7 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
     const el = containerRef.current;
     if (!el) return;
 
-    let resizeTimer: number;
+    let resizeTimer: number | undefined;
 
     const recalculateGrid = () => {
       const { width, height } = el.getBoundingClientRect();
