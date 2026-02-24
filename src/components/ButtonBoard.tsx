@@ -23,6 +23,7 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, number | null>());
+  const lastOrientation = useRef<'portrait' | 'landscape'>('landscape');
 
   const [notes, setNotes] = useState<NoteInfo[]>([]);
   const [btnW, setBtnW] = useState(160);
@@ -46,13 +47,36 @@ const ButtonBoard: React.FC<ButtonBoardProps> = ({
       const bw = compact ? 120 : 160;
       const bh = compact ? 130 : 180;
 
-      const c = clamp(4, Math.floor(width / bw), 8);
-      const r = clamp(2, Math.floor(height / bh), 4);
+      // Only update the stored orientation when the window is large enough
+      // to meaningfully fit the minimum grid for that orientation.
+      // Portrait min: 2 cols × 4 rows. Landscape min: 4 cols × 2 rows.
+      const fitsPortrait  = width >= bw * 2 && height >= bh * 4;
+      const fitsLandscape = width >= bw * 4 && height >= bh * 2;
+      if (fitsPortrait || fitsLandscape) {
+        lastOrientation.current = height >= width ? 'portrait' : 'landscape';
+      }
+
+      const portrait = lastOrientation.current === 'portrait';
+      // Portrait:  2–4 cols, 4–8 rows   Landscape: 4–8 cols, 2–4 rows
+      const c = portrait
+        ? clamp(2, Math.floor(width  / bw), 4)
+        : clamp(4, Math.floor(width  / bw), 8);
+      const r = portrait
+        ? clamp(4, Math.floor(height / bh), 8)
+        : clamp(2, Math.floor(height / bh), 4);
       const total = c * r;
 
-      const newNotes: NoteInfo[] = [];
+      const ascending: NoteInfo[] = [];
       for (let i = 0; i < total; i++) {
-        newNotes.push(noteInfoForIndex(i, total));
+        ascending.push(noteInfoForIndex(i, total));
+      }
+      // Reverse row order: lowest notes at the bottom, highest at the top.
+      // Slice each row then reverse the row array before flattening.
+      const newNotes: NoteInfo[] = [];
+      for (let row = r - 1; row >= 0; row--) {
+        for (let col = 0; col < c; col++) {
+          newNotes.push(ascending[row * c + col]);
+        }
       }
 
       setBtnW(bw);
