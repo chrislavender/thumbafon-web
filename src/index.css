@@ -1,0 +1,5 @@
+/* Minimal base — app-level styles are in App.css */
+:root {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
