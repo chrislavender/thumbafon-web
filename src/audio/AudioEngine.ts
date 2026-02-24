@@ -26,6 +26,7 @@ export default class AudioEngine implements IAudioEngine {
   private dryGain: GainNode | null = null;
   private wetGain: GainNode | null = null;
   private convolver: ConvolverNode | null = null;
+  private isUnlocked = false;
 
   private ensureContext(): AudioContext {
     if (!this.ctx) {
@@ -33,6 +34,29 @@ export default class AudioEngine implements IAudioEngine {
       this.waveforms = buildWaveforms(this.ctx);
     }
     return this.ctx;
+  }
+
+  /**
+   * Unlocks audio on iOS devices by playing a silent buffer.
+   * iOS requires an actual sound to be played in response to user interaction
+   * to enable audio that bypasses the silent/ringer switch (like YouTube).
+   */
+  private unlockAudio(ctx: AudioContext): void {
+    if (this.isUnlocked) return;
+
+    try {
+      // Create a silent stereo buffer (1 sample of silence per channel)
+      // Using stereo ensures compatibility with all iOS devices
+      const buffer = ctx.createBuffer(2, 1, ctx.sampleRate);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(); // Start immediately
+      
+      this.isUnlocked = true;
+    } catch (err) {
+      console.warn('Failed to unlock audio:', err);
+    }
   }
 
   private buildGraph(ctx: AudioContext): void {
@@ -134,6 +158,9 @@ export default class AudioEngine implements IAudioEngine {
   noteOn(midiNum: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
+
+    // Unlock audio on iOS (must happen before resume for maximum compatibility)
+    this.unlockAudio(ctx);
 
     // Resume AudioContext if suspended (required by browser autoplay policy)
     if (ctx.state === 'suspended') {
