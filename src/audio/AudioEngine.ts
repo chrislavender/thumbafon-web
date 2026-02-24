@@ -45,12 +45,13 @@ export default class AudioEngine implements IAudioEngine {
     if (this.isUnlocked) return;
 
     try {
-      // Create a silent buffer (1 sample of silence)
-      const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      // Create a silent stereo buffer (1 sample of silence per channel)
+      // Using stereo ensures compatibility with all iOS devices
+      const buffer = ctx.createBuffer(2, 1, ctx.sampleRate);
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(ctx.destination);
-      source.start(0);
+      source.start(); // Start immediately
       
       this.isUnlocked = true;
     } catch (err) {
